@@ -1,0 +1,5 @@
+.venv/
+registered_faces/
+attendance.csv
+__pycache__/
+*.pyc
