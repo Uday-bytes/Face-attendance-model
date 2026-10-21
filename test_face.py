@@ -8,9 +8,11 @@ import os
 import csv
 import numpy as np
 import warnings
+import tkinter as tk
 from datetime import datetime
 from numpy.linalg import norm
 from insightface.app import FaceAnalysis
+from tkinter import simpledialog
 
 # Suppress InsightFace future warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -53,6 +55,9 @@ frame_count = 0
 faces = []
 threshold = 0.45 # Recognition threshold
 
+root = tk.Tk()
+root.withdraw()
+
 print("System ready. Press 'r' to register a new face. Press 'q' to quit.")
 
 while True:
@@ -68,11 +73,18 @@ while True:
     if key == ord('r'):
         reg_faces = app.get(frame)
         if len(reg_faces) == 1:
-            name = input("\nFace detected! Enter the student's name/ID: ").strip()
-            if name:
+            name = simpledialog.askstring(
+                "Register Face", 
+                "Face detected! Enter the student's name/ID:",
+                parent=root
+            )
+            if name and name.strip():
+                name = name.strip()
                 known_embeddings[name] = reg_faces[0].normed_embedding
                 cv2.imwrite(os.path.join('registered_faces', f"{name}.jpg"), frame)
                 print(f"Successfully registered {name}!")
+            else:
+                print("\nRegistration cancelled.")
         elif len(reg_faces) > 1:
             print("\nRegistration failed: Multiple faces detected.")
         else:
