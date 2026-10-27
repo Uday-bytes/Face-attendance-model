@@ -1,0 +1,71 @@
+FACE ATTENDANCE - EXPLORATORY DATA ANALYSIS
+Data folder: <hidden>   anonymized: True
+
+1. Dataset inventory (all images)
+---------------------------------
+Images: 13232   People: 5748
+Images per person: min 1, median 1, mean 2.3, max 530
+People with exactly 1 image: 4068 (70.8%)
+People with >= 5 images:     423 (7.4%)
+People with 5-10 images:     280
+
+2. Image quality and lighting (analysed images)
+-----------------------------------------------
+Analysed images: 1000   unreadable/corrupt: 0
+All images are 250x250 px
+Exact duplicate images: 0
+      brightness  contrast  sharpness
+mean        93.5      64.0      342.5
+std         27.4      11.4      260.1
+min         30.6      34.4       11.5
+50%         91.8      63.3      278.7
+max        188.8     103.4     1751.3
+  dark         :  11.2% of images
+  bright       :   0.0% of images
+  low contrast :   0.1% of images
+  blurry       :  14.0% of images
+Brightness outliers by box-plot rule (1.5 x IQR): 9 images (outside 16-169)
+Average brightness spread inside one person: 25.1 (overall spread 27.4)
+
+3. Face detection
+-----------------
+  detected (1 face)           :   854  (85.4%)
+  detected (multiple faces)   :   141  (14.1%)
+  low confidence              :     2  (0.2%)
+  no face                     :     3  (0.3%)
+Overall detection rate: 99.5%   (failed: 0.5%)
+  detection rate when dark   : 99.1%  (n=112)
+  detection rate when normal : 99.5%  (n=888)
+Median quality, detected vs not detected:
+                brightness  contrast  sharpness
+detected_label                                 
+detected              92.1      63.3      279.3
+not detected          85.3      67.6      114.5
+
+4. Strongest correlations between measurements
+----------------------------------------------
+  contrast vs sharpness_log: r = +0.51
+  face_area_ratio vs det_score: r = -0.46
+  brightness vs contrast: r = +0.37
+  det_score vs yaw_abs: r = -0.33
+  brightness vs sharpness_log: r = +0.29
+  (Correlation shows a linear relationship only - it does not prove cause and effect.)
+
+5. Recognition quality (same person vs different people)
+--------------------------------------------------------
+Same-person pairs: 1894  mean similarity 0.668
+Different-person pairs: 20000  mean similarity 0.004
+At the app threshold 0.45: FAR = 0.00% , FRR = 1.80% , balanced accuracy = 99.1%
+Equal-error threshold: 0.17  (FAR = 0.43%, FRR = 0.48%)
+Lowest threshold with FAR <= 1%: 0.16  (then FRR = 0.48%)
+
+6. Findings and what they mean for the project
+----------------------------------------------
+1. Only 7% of people have >= 5 images, and 71% have just one. Same-person comparisons need several images, so use --min-images 5 for LFW, and collect 5-10 images per consenting student for your own data.
+2. 11% of images are very dark or very bright. Lighting varies a lot, so test the app under bright, normal and dim light and consider brightness normalisation (for example CLAHE) before detection.
+3. 14% of images look blurry (low Laplacian variance). Ask students to register with a steady, in-focus photo.
+4. Detection succeeds on 99.5% of images, so failed detections are a minor issue here.
+5. 14% of images contain several faces. Registration in the app needs exactly one face, so those images would be rejected.
+6. The equal-error threshold on this data is 0.17, which differs from the app's 0.45. Choose the threshold by weighing FAR against FRR (plot 13).
+
+Note: heuristic limits (dark/bright/blurry/small-face) are starting points; adjust them in the settings at the top of EDA.py after looking at the histograms.
