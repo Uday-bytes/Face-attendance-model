@@ -1,55 +1,27 @@
 #!/usr/bin/env python3
 """
 EDA.py - Exploratory Data Analysis for the Face Attendance project
-====================================================================
 
 Project requirement (Image Processing: Face Attendance)
     "EDA: image counts per person, lighting variation and failed detections."
     "Metrics: recognition accuracy, false accepted, false rejected."
     "Test under different light, distance and angle."
 
-This script turns those requirements into concrete analyses, using the plot
-types from the Data Visualization lecture (bar, histogram with Freedman-Diaconis
-bins, KDE/ECDF, box/violin, heatmap incl. the "missing value" heatmap,
-correlation matrix, pairplot, line plot).
-
-ANALYSIS PLAN
--------------
- Question                                   Method (lecture topic)                       Output file
- -----------------------------------------  -------------------------------------------  ----------------------------------
- How many images does each person have?    Bar plot, bar of count categories            01_images_per_person.png
- Is the data balanced?                      Histogram (integer bins) + ECDF              02_count_distribution.png
- Are image sizes consistent?                Hexbin / joint plot (only if sizes differ)   03_image_sizes.png
- How much does lighting/quality vary?       Histogram (FD bins) + KDE, threshold lines   04_lighting_quality_distributions.png
- Does it vary within one person?            Box plots per person (compare + outliers)    05_variation_within_person.png
- How often does detection fail, and why?   Bar plot of outcomes, rate by lighting bin   06_detection_overview.png
- Which images fail?                         Missing-value style heatmap (person x img)   07_detection_heatmap.png
- Do failures relate to image quality?       Box plots: detected vs not detected          08_failure_vs_quality.png
- Distance / angle of detected faces         Histograms (face size, score, |yaw|)         09_face_geometry.png
- Which measurements move together?          Correlation matrix heatmap                   10_correlation_heatmap.png
- Pairwise structure, split by outcome       Pairplot with hue                            11_pairplot.png
- Same person vs different person scores     Overlaid histogram + KDE                     12_similarity_distributions.png
- Best recognition threshold, FAR / FRR      Line plot (FAR and FRR vs threshold)         13_far_frr_curve.png
- Which people look alike to the model?      Heatmap of similarity between people         14_person_similarity_heatmap.png
-
 PRIVACY / CONSENT RULES (please keep)
--------------------------------------
- * Only use images of people who have given consent, or a public dataset such as LFW.
+
+ * Only images from a public dataset such as LFW.
  * Everything runs locally. No image is uploaded or copied; no face crops are saved.
  * Use --anonymize to replace names with P001, P002... in plots, the CSV and the report.
  * Do NOT commit the photos (registered_faces/, unknown_faces/, the dataset) to GitHub.
    Add them to .gitignore. Share only anonymized outputs of this script.
 
 USAGE
------
+
    python EDA.py --data path/to/lfw-deepfunneled --min-images 5 --anonymize
    python EDA.py --data registered_faces --anonymize
    python EDA.py --data dataset --no-detect            # image counts + lighting only (fast)
    python EDA.py --data dataset --detector haar        # without InsightFace
 
-Folder layouts understood:
-   dataset/<Person>/<image>.jpg      (LFW and most datasets: person = folder name)
-   dataset/<Person>_<number>.jpg     (flat folder: person = file name without trailing number)
 
 Requirements: numpy, pandas, matplotlib, seaborn, opencv-python  (+ insightface, onnxruntime
 for detection scores, embeddings and the FAR/FRR analysis).
@@ -80,9 +52,8 @@ import cv2
 warnings.filterwarnings("ignore", category=FutureWarning)
 sns.set_theme(style="whitegrid", palette="colorblind")
 
-# ----------------------------------------------------------------------------
 # Settings (same values as the attendance app where they exist)
-# ----------------------------------------------------------------------------
+
 IMG_EXT = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 APP_THRESHOLD = 0.45      # THRESHOLD used in face_attendance_gui.py
 MIN_DET_SCORE = 0.6       # MIN_DET_SCORE used in face_attendance_gui.py
@@ -104,9 +75,8 @@ OUTCOME_COLORS = {OUT_OK: "#2ca02c", OUT_MULTI: "#98df8a", OUT_LOW: "#ff7f0e",
                   OUT_NONE: "#d62728", OUT_BAD: "#7f7f7f"}
 
 
-# ----------------------------------------------------------------------------
 # Small helpers
-# ----------------------------------------------------------------------------
+
 def fd_bins(x):
     """Freedman-Diaconis bin edges (lecture): robust to outliers. Falls back safely."""
     x = np.asarray(x, dtype=float)
@@ -152,9 +122,8 @@ def safe(step_name, fn, *args, **kwargs):
         return None
 
 
-# ----------------------------------------------------------------------------
 # 1. Inventory: which images exist and who do they belong to?
-# ----------------------------------------------------------------------------
+
 def person_from_path(path, root):
     parent = os.path.dirname(path)
     if os.path.abspath(parent) != os.path.abspath(root):
@@ -210,9 +179,8 @@ def select_subset(inv, min_images, max_images, per_person_cap, seed):
     return inv.iloc[picked].reset_index(drop=True)
 
 
-# ----------------------------------------------------------------------------
 # 2. Per-image measurements: size, lighting, sharpness, detection, embedding
-# ----------------------------------------------------------------------------
+
 class FaceDetector:
     """InsightFace (same model as the app) with an OpenCV Haar fallback."""
 
@@ -317,9 +285,8 @@ def measure_images(subset, data_root, detector, anonymize):
     return df, embs
 
 
-# ----------------------------------------------------------------------------
 # 3. Plots
-# ----------------------------------------------------------------------------
+
 def plot_counts(inv, out, show):
     """Bar plot: images per person (+ how many people reach 5-10 images)."""
     counts = inv["person"].value_counts()
@@ -510,9 +477,8 @@ def plot_pairplot(df, out, show, max_points=500, seed=0):
     save(g.figure, out, "11_pairplot.png", show)
 
 
-# ----------------------------------------------------------------------------
 # 4. Recognition analysis: same person vs different person (FAR / FRR)
-# ----------------------------------------------------------------------------
+
 def similarity_analysis(emb, persons, max_pairs_per_person=30, n_impostor=20000, seed=0):
     """
     emb: (n, d) L2-normalised embeddings, persons: (n,) labels.
@@ -602,9 +568,8 @@ def plot_person_similarity(emb, persons, out, show, max_people=20):
     save(fig, out, "14_person_similarity_heatmap.png", show)
 
 
-# ----------------------------------------------------------------------------
 # 5. Report
-# ----------------------------------------------------------------------------
+
 class Report:
     def __init__(self):
         self.lines = []
@@ -759,9 +724,8 @@ def write_findings(rep, counts, df, shares, rate, by, row, eer_t):
             "settings at the top of EDA.py after looking at the histograms.")
 
 
-# ----------------------------------------------------------------------------
 # 6. Main
-# ----------------------------------------------------------------------------
+
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description="EDA for the face attendance project")
     ap.add_argument("--data", required=True, help="folder with images (see docstring for layouts)")

@@ -1,26 +1,34 @@
-Face recognition and Attendance System
+Face Recognition Attendance System
 
-An automated facial recognition system built to identify known students in classroom images and log attendance to a local CSV file
+A desktop app that marks class attendance from a webcam. Students are registered once; when a registered face appears, attendance is written to a CSV file. Unknown faces are saved to a dated folder so a teacher can check them manually.
 
-Consent and Privacy Notice
+It uses InsightFace to turn each face into an embedding (a list of 512 numbers) and compares faces by cosine similarity. A face is accepted when similarity is at least 0.45, and detections below 0.6 confidence are ignored.
 
-Explicit Consent: All student portrait images in the training and testing datasets are collected with explicit user consent.
-No Public Distribution: Real student facial photographs and personal biometric assets are kept strictly private and will never be shared publicly or published to online repositories.
-Academic & Ethical Standards: This project is developed solely for educational and research evaluation under privacy-compliant data guidelines.
+Privacy
+Only people who gave consent, or a public dataset (LFW), are used.
+Everything runs locally. Nothing is uploaded.
+Photos, attendance.csv and the unknown-faces folder are not included in this repository.
+Files
+face_attendance_gui.py - the app (Take Attendance / Register New Faces)
+EDA.py - exploratory data analysis of the image dataset
+Face_Attendance_System.ipynb - notebook with each part explained
+attendance.csv, registered_faces/, unknown_faces/<date>/ - created by the app
+Setup and run
 
-Data Handling and Scrunity Rules
+Requires Python 3.9+ and a webcam.
 
-Local & Offline Processing: All facial detection, embedding extraction, and attendance logging operations are performed 100% locally and offline on the host computer.
-Repository Isolation (.gitignore):
-The local dataset folder containing student images (e.g., dataset/ or lfw/) is strictly excluded from version control via .gitignore .
-No raw image files or private student photos are committed or pushed to GitHub.
-Log Handling: Attendance results are generated locally into attendance.csv containing only Name, Date, and Time stamps.
+pip install insightface onnxruntime opencv-python numpy pillow pandas matplotlib seaborn
+python face_attendance_gui.py
 
-Tech Stack & Dependencies
+The first run downloads the InsightFace model, so it needs internet once.
 
-Python 3.x
-InsightFace: Pretrained face-analysis models for face detection and facial embedding extraction, using the buffalo_l model pack.
-ONNX Runtime: Executes the pretrained InsightFace models for face detection and recognition.
-OpenCV (cv2): Image loading and computer vision operations
-Pandas: Data handling and attendance CSV management
-Matplotlib: Visualizing Exploratory Data Analysis (EDA) charts
+Run the EDA on a folder of images:
+
+python EDA.py --data path/to/images --min-images 5 --anonymize
+
+Results are saved in eda_output/.
+
+Limitations
+A photo or video of a face can fool the system (no liveness check).
+Poor light, blur and side angles lower accuracy.
+Detection runs on the CPU, so it is slow.

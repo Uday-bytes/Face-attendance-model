@@ -9,19 +9,15 @@ import threading
 import time
 import tkinter as tk
 import warnings
-from datetime import datetime
-from tkinter import messagebox, ttk
-
 import cv2
 import numpy as np
 from numpy.linalg import norm
 from PIL import Image, ImageTk
 from insightface.app import FaceAnalysis
+from datetime import datetime
+from tkinter import messagebox, ttk
 
-# Suppress InsightFace future warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-# ----------------------------- Settings -----------------------------
+# Settings 
 REGISTERED_DIR = "registered_faces"
 UNKNOWN_DIR = "unknown_faces"       # unknown_faces/<YYYY-MM-DD>/unknown_<HH-MM-SS>.jpg
 CSV_FILE = "attendance.csv"
@@ -37,7 +33,7 @@ RED = (0, 0, 255)
 ORANGE = (0, 165, 255)
 
 
-# ----------------------------- Helpers -----------------------------
+#  Helpers 
 def compute_similarity(a, b):
     return float(np.dot(a, b) / (norm(a) * norm(b)))
 
@@ -82,7 +78,7 @@ def open_folder(path):
         subprocess.Popen(["xdg-open", path])
 
 
-# ----------------------------- App -----------------------------
+#  App 
 class AttendanceApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -96,23 +92,23 @@ class AttendanceApp(tk.Tk):
 
         # model / data
         self.fa = None
-        self.known = {}                 # name -> embedding
-        self.model_state = "loading"    # loading | ready | error
+        self.known = {}                 # {name: embedding}
+        self.model_state = "loading"    # "loading" | "ready" | "error"
         self.model_error = ""
         self.model_lock = threading.Lock()
-        self.events = queue.Queue()     # worker thread -> GUI thread
+        self.events = queue.Queue()
 
         # runtime state
-        self.mode = None                # "attendance" | "register" | None
+        self.mode = None
         self.cap = None
         self.running = False
-        self.busy = False               # a detection worker is running
-        self.finishing = False          # a face was handled; camera is about to close
+        self.busy = False
+        self.finishing = False
         self.current_frame = None
-        self.latest_results = []        # [(box, label, color)]
+        self.latest_results = []
         self.last_detect = 0.0
         self.marked = set()
-        self.unknown_cache = []         # [[embedding, last_seen_time], ...]
+        self.unknown_cache = []
         self.unknown_count = 0
         self.tick_job = None
         self.photo = None
@@ -121,7 +117,7 @@ class AttendanceApp(tk.Tk):
         threading.Thread(target=self._load_model, daemon=True).start()
         self.after(200, self._check_model)
 
-    # ------------------------- UI construction -------------------------
+    #  UI construction 
     def _build_ui(self):
         style = ttk.Style(self)
         style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"))
@@ -226,7 +222,7 @@ class AttendanceApp(tk.Tk):
         ttk.Button(side, text="Back to Menu", style="Stop.TButton",
                    command=self.stop_mode).pack(fill="x", pady=(10, 0))
 
-    # ------------------------- Model loading -------------------------
+    #  Model loading 
     def _load_model(self):
         try:
             fa = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
@@ -245,7 +241,7 @@ class AttendanceApp(tk.Tk):
             self.fa = fa
             self.known = known
             self.model_state = "ready"
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self.model_error = str(e)
             self.model_state = "error"
 
@@ -262,7 +258,7 @@ class AttendanceApp(tk.Tk):
     def _refresh_home(self):
         self.home_status.config(text=f"Ready.  Registered students: {len(self.known)}")
 
-    # ------------------------- Start / stop -------------------------
+    #  Start / stop 
     def start_mode(self, mode):
         if self.model_state != "ready" or self.running:
             return
@@ -333,7 +329,7 @@ class AttendanceApp(tk.Tk):
             self.stop_mode()
         self.destroy()
 
-    # ------------------------- Video loop -------------------------
+    #  Video loop 
     def _tick(self):
         if not self.running:
             return
@@ -345,7 +341,7 @@ class AttendanceApp(tk.Tk):
             return
         self.current_frame = frame
         self._drain_events()
-        if not self.running:   # a "finished" event just closed the camera
+        if not self.running:   # a "finished" event closed the camera
             return
 
         now = time.time()
@@ -392,7 +388,7 @@ class AttendanceApp(tk.Tk):
                 label = self.att_status if self.mode == "attendance" else self.reg_status
                 label.config(text=f"Error: {event[1]}")
 
-    # ------------------------- Detection worker (background thread) -------------------------
+    #  Detection worker (background thread) 
     def _detect_worker(self, frame, mode):
         try:
             with self.model_lock:
@@ -406,7 +402,7 @@ class AttendanceApp(tk.Tk):
             else:
                 color = GREEN if len(faces) == 1 else ORANGE
                 self.latest_results = [(f.bbox.astype(int), "", color) for f in faces]
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self.events.put(("error", str(e)))
         finally:
             self.busy = False
@@ -478,7 +474,7 @@ class AttendanceApp(tk.Tk):
         cv2.imwrite(path, img)
         self.events.put(("unknown", path))
 
-    # ------------------------- Registration -------------------------
+    #  Registration
     def _refresh_registered_list(self):
         self.reg_list.delete(0, "end")
         for name in sorted(self.known, key=str.lower):

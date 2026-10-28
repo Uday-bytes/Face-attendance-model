@@ -1,6 +1,25 @@
-.venv/
+# Private data:
 registered_faces/
+unknown_faces/
 attendance.csv
+
+# Downloaded datasets
+lfw-dataset/
+lfw-deepfunneled/
+lfwpeople/
+dataset/
+data/
+
+#Python
 __pycache__/
-Dataset/
 *.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
