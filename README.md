@@ -22,6 +22,7 @@ python face_attendance_gui.py
 
 The first run downloads the InsightFace model, so it needs internet once.
 
+Database link for EDA: https://www.kaggle.com/datasets/jessicali9530/lfw-dataset
 Run the EDA on a folder of images:
 
 python EDA.py --data path/to/images --min-images 5 --anonymize
